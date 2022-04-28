@@ -1,0 +1,85 @@
+version: "3"
+networks:
+  loki:
+services:
+  loki:
+    image: grafana/loki:latest
+    volumes:
+      - /home/emmanuel/cbcs/loki:/etc/loki
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - loki
+
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - /var/log:/var/log
+      - /home/emmanuel/cbcs/promtail:/etc/promtail
+      # ports:
+    #   - "1514:1514" # this is only needed if you are going to send syslogs
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    networks:
+      - loki
+
+
+  grafana:
+    image: grafana/grafana:latest
+    user: "1000"
+    volumes:
+    - /home/emmanuel/cbcs/grafana:/var/lib/grafana
+    ports:
+      - "2000:3000"
+    restart: unless-stopped
+    networks:
+      - loki
+
+
+
+
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - 9110:9100
+    restart: unless-stopped
+
+
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - 9228:9090
+    volumes:
+      - ./prometheus:/etc/prometheus/prometheus.yml
+      - ./alertmanger/alert.rules:/alert.rules
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+   
+
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - 9073:9093
+    volumes:
+      - /home/emmanuel/cbcs/alertmanager/alertmanager.yml:/etc/alertmanager/
+    restart: unless-stopped
+    command:
+      - '-config.file=/etc/alertmanager/config.yml'
+      - '-storage.path=/alertmanager' 

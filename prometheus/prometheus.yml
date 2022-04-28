@@ -1,0 +1,27 @@
+global:
+ scrape_interval:     15s 
+
+ 
+
+  external_labels:
+   monitor: 'codelab-monitor'
+
+ 
+
+
+scrape_configs:
+ - job_name: 'prometheus-server'
+   scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+    labels:
+      group: 'prometheus-server'
+
+
+
+ - job_name: "node"
+   scrape_interval: 5s
+   static_configs:
+     - targets: ['host.docker.internal:9100']
+   labels:
+     group: 'node-exporter-server'
